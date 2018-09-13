@@ -116,44 +116,7 @@ plot.CARP <- function(
         plot(ylab = "Amount of Regularization")
     },
     path = {
-      plot.cols <- c(
-        axis,
-        "Iter",
-        "Obs",
-        "Cluster",
-        "Lambda",
-        "ObsLabel",
-        "NCluster",
-        "LambdaPercent"
-      )
-      plot.frame <- x$carp.cluster.path.vis[, plot.cols]
-      names(plot.frame)[1:2] <- c("V1", "V2")
-      plot.frame %>%
-        dplyr::filter(LambdaPercent <= percent) %>%
-        dplyr::filter(Iter > x$burn.in) %>%
-        ggplot2::ggplot(ggplot2::aes(x = V1, y = V2, group = Obs)) +
-        ggplot2::geom_path(
-          ggplot2::aes(x = V1, y = V2),
-          linejoin = "round",
-          color = "red",
-          size = 1
-        ) +
-        ggplot2::geom_point(
-          ggplot2::aes(x = V1, y = V2),
-          data = plot.frame %>% dplyr::filter(Iter == 1),
-          color = "black",
-          size = I(2)
-        ) +
-        ggrepel::geom_text_repel(
-          ggplot2::aes(x = V1, y = V2, label = ObsLabel),
-          size = I(3),
-          data = plot.frame %>% dplyr::filter(Iter == 1)
-        ) +
-        ggplot2::guides(color = FALSE, size = FALSE) +
-        ggplot2::theme(axis.title = ggplot2::element_text(size = 15)) +
-        ggplot2::theme(axis.text = ggplot2::element_text(size = 10)) +
-        ggplot2::xlab(axis[1]) +
-        ggplot2::ylab(axis[2])
+      carp_path_plot(x, axis = axis, percent = percent)
     },
     interactive = {
       shiny::shinyApp(
@@ -422,4 +385,53 @@ plot.CARP <- function(
       )
     }
   )
+}
+
+#' @noRd
+#' @importFrom rlang .data
+#' @importFrom dplyr filter
+#' @importFrom ggplot2 ggplot geom_path aes geom_point guides theme element_text xlab ylab
+#' @importFrom ggrepel geom_text_repel
+carp_path_plot <- function(x, axis, percent, k){
+  n_args <- !missing(percent) + !missing(k)
+
+  if(n_args != 1){
+    stop("Exactly one of ", sQuote("percent"), " and ", sQuote("k"), " must be supplied.")
+  }
+
+  plot_cols <- c(
+    axis,
+    "Iter",
+    "Obs",
+    "Cluster",
+    "Lambda",
+    "ObsLabel",
+    "NCluster",
+    "LambdaPercent"
+  )
+  plot_frame_full <- x$carp.cluster.path.vis[, plot.cols] %>% filter(.data$Iter > x$burn.in)
+  names(plot_frame_full)[1:2] <- c("V1", "V2")
+
+  if(!missing(percent)){
+    plot_frame_full <- plot_frame_full %>% filter(.data$LambdaPercent <= percent)
+  } else {
+    # Get the first iteration at which we have k (or fewer) clusters
+    # to avoid plotting "beyond" what we want
+    iter_first_k <- plot_frame_full %>% select(.data$Iter, .data$NCluster) %>%
+                                        filter(.data$NCluster <= k) %>%
+                                        summarize(iter_first_k = min(Iter))
+
+    plot_frame_full <- plot_frame_full %>% filter(.data$Iter <= iter_first_k)
+  }
+
+  plot_frame_init <- plot_frame_full %>% filter(.data$Iter == min(.data$Iter))
+
+  ggplot(mapping = aes(x = V1, y = V2, group = Obs)) +
+    geom_path(data = plot_frame_full, linejoin="round", color="red", size=1) +
+    geom_point(data = plot_frame_init, color="black", size = 2) +
+    geom_text_repel(data = plot_frame_init, mapping = aes(label = ObsLabel), size = 3) +
+    guides(color = FALSE, size = FALSE) +
+    theme(axis.title = element_text(size = 15),
+          axis.text  = element_text(size = 10)) +
+    xlab(axis[1]) + ylab(axis[2])
 }

@@ -37,7 +37,8 @@ Imports:
     gtools,
     ggrepel,
     RColorBrewer,
-    gganimate
+    gganimate, 
+    rlang
 RoxygenNote: 6.1.0
 LinkingTo: Rcpp, RcppEigen
 Suggests: testthat,
