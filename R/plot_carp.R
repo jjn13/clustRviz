@@ -409,7 +409,9 @@ carp_path_plot <- function(x, axis, percent, k){
     "NCluster",
     "LambdaPercent"
   )
-  plot_frame_full <- x$carp.cluster.path.vis[, plot.cols] %>% filter(.data$Iter > x$burn.in)
+
+  plot_frame_full <- x$carp.cluster.path.vis %>% select(plot_cols) %>%
+                                                 filter(.data$Iter > x$burn.in)
   names(plot_frame_full)[1:2] <- c("V1", "V2")
 
   if(!missing(percent)){

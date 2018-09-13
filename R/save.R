@@ -195,59 +195,12 @@ saveviz.CARP <- function(
           gganimate::gganimate(p, file.name)
         },
         static = {
-          if (!is.null(percent)) {
-            plot.frame %>%
-              dplyr::filter(LambdaPercent <= percent) %>%
-              dplyr::filter(Iter > x$burn.in) %>%
-              ggplot2::ggplot(ggplot2::aes(x = V1, y = V2, group = Obs)) +
-              ggplot2::geom_path(
-                ggplot2::aes(x = V1, y = V2),
-                linejoin = "round",
-                color = "red",
-                size = 1
-              ) +
-              ggplot2::geom_point(
-                ggplot2::aes(x = FirstV1, y = FirstV2),
-                color = "black",
-                size = I(2)
-              ) +
-              ggplot2::geom_text(
-                ggplot2::aes(x = FirstV1, y = FirstV2, label = FirstObsLabel),
-                size = I(3)
-              ) +
-              ggplot2::guides(color = FALSE, size = FALSE) +
-              ggplot2::theme(axis.title = ggplot2::element_text(size = 15)) +
-              ggplot2::theme(axis.text = ggplot2::element_text(size = 10)) +
-              ggplot2::xlab(axis[1]) +
-              ggplot2::ylab(axis[2]) -> p
-            ggsave(filename = file.name, plot = p, width = static.width, height = static.height, device = static.image.type)
-          } else if (!is.null(k)) {
-            plot.frame %>%
-              dplyr::filter(NCluster >= k) %>%
-              dplyr::filter(Iter > x$burn.in) %>%
-              ggplot2::ggplot(ggplot2::aes(x = V1, y = V2, group = Obs)) +
-              ggplot2::geom_path(
-                ggplot2::aes(x = V1, y = V2),
-                linejoin = "round",
-                color = "red",
-                size = 1
-              ) +
-              ggplot2::geom_point(
-                ggplot2::aes(x = FirstV1, y = FirstV2),
-                color = "black",
-                size = I(2)
-              ) +
-              ggplot2::geom_text(
-                ggplot2::aes(x = FirstV1, y = FirstV2, label = FirstObsLabel),
-                size = I(3)
-              ) +
-              ggplot2::guides(color = FALSE, size = FALSE) +
-              ggplot2::theme(axis.title = ggplot2::element_text(size = 15)) +
-              ggplot2::theme(axis.text = ggplot2::element_text(size = 10)) +
-              ggplot2::xlab(axis[1]) +
-              ggplot2::ylab(axis[2]) -> p
-            ggsave(filename = file.name, plot = p, width = static.width, height = static.height, device = static.image.type)
-          }
+          p <- carp_path_plot(x, axis, percent, k)
+          ggsave(filename = file.name,
+                 plot = p,
+                 width = static.width,
+                 height = static.height,
+                 device = static.image.type)
         }
       )
     },
