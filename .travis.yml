@@ -38,7 +38,7 @@ deploy:
   skip_cleanup: true
   github_token: $GITHUB_TOKEN
   on:
-    branch: master
+    branch: develop
   local_dir: .
-  target_branch: stable
+  target_branch: master
   condition: $TRAVIS_OS_NAME = "linux"
