@@ -1,6 +1,6 @@
 #' @rdname plot_carp
 #' @export
-saveviz <- function(x, ...) {
+saveviz <- function(x,frames_number,frame_rate, ...) {
   UseMethod("saveviz", x)
 }
 
@@ -32,10 +32,6 @@ saveviz <- function(x, ...) {
 #' @importFrom RColorBrewer brewer.pal
 #' @rdname plot_carp
 #' @export
-
-frame_rate <- 10
-frames_number <- 100
-
 saveviz.CARP <- function(x,
                          file.name,
                          type = c("dendrogram", "path", "js"),
