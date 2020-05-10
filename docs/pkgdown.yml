@@ -1,0 +1,11 @@
+pandoc: 2.7.3
+pkgdown: 1.5.1
+pkgdown_sha: ~
+articles:
+  Acknowledgements: Acknowledgements.html
+  ClustRVizAlgorithm: ClustRVizAlgorithm.html
+  ClustRVizDetails: ClustRVizDetails.html
+  ClustRVizWeights: ClustRVizWeights.html
+  QuickStart: QuickStart.html
+last_built: 2020-05-10T03:37Z
+
