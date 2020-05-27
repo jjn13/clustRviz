@@ -20,6 +20,8 @@ saveviz <- function(x, ...) {
 #' @param width The width of the output, given in \code{unit}s
 #' @param height The height of the output, given in \code{unit}s
 #' @param units The unit in which \code{width} and \code{height} are specified
+#' @param frames_number the total number of frames passed to nframes in animate()
+#' @param frame_rate the frames per second passed to parameter fps in animate()
 #' @importFrom stats as.dendrogram
 #' @importFrom ggplot2 ggplot aes geom_path geom_point geom_text guides theme element_text
 #' @importFrom ggplot2 xlab ylab scale_color_manual ggsave
@@ -45,6 +47,8 @@ saveviz.CARP <- function(x,
                          width = 8,
                          height = 5,
                          units = c("in", "cm", "mm", "px"),
+                         frames_number = 100,
+                         frame_rate = 24,
                          ...) {
 
   type       <- match.arg(type)
@@ -101,7 +105,7 @@ saveviz.CARP <- function(x,
                                   percent.seq = percent.seq)
       animation::ani.options(ani.width  = convert_units(width,  from = units, to = "px"),
                              ani.height = convert_units(height, from = units, to = "px"))
-      gganimate::anim_save(filename = file.name, animation = animate(p))
+      gganimate::anim_save(filename = file.name, animation = animate(p, nframes = frames_number, fps = frame_rate))
       invisible(file.name)
     },
     dendrogram = {
