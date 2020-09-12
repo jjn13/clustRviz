@@ -30,3 +30,12 @@ test_that("CBASS stores mean of original data", {
   cbass_fit <- CBASS(presidential_speech, X.center.global = FALSE)
   expect_equal(0, cbass_fit$mean_adjust)
 })
+
+
+test_that("CBASS fails when max_iter reached", {
+  clustRviz_options(max_iter = 400)
+  on.exit(clustRviz_reset_options())
+
+  expect_error(CBASS(presidential_speech), "Clustering ended early")
+})
+

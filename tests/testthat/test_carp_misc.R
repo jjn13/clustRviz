@@ -30,3 +30,10 @@ test_that("CARP stores scale factors", {
   expect_equal(carp_fit_no_std$scale_vector, rep(1, NCOL(presidential_speech)))
   expect_equal(carp_fit_no_std$center_vector, rep(0, NCOL(presidential_speech)))
 })
+
+test_that("CARP fails when max_iter reached", {
+  clustRviz_options(max_iter = 400)
+  on.exit(clustRviz_reset_options())
+
+  expect_error(CARP(presidential_speech), "Clustering ended early")
+})

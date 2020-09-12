@@ -52,7 +52,7 @@ public:
     }
 
     if(iter >= max_iter){
-      ClustRVizLogger::warning("Clustering ended early -- `max_iter` reached. Treat results with caution.");
+      ClustRVizLogger::error("Clustering ended early -- `max_iter` reached. Treat results with caution.");
     }
 
     solved = true;
@@ -204,7 +204,7 @@ public:
     }
 
     if(iter >= max_iter){
-      ClustRVizLogger::warning("Clustering ended early -- `max_iter` reached. Treat results with caution.");
+      ClustRVizLogger::error("Clustering ended early -- `max_iter` reached. Treat results with caution.");
     }
 
     solved = true;
