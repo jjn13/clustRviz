@@ -1,14 +1,24 @@
-#' Compute \code{CARP} (Convex Clustering) Solution Path
+#' @rdname TROUT
+#' @export
+TROUT <- function(X, ...){
+  UseMethod("TROUT")
+}
+
+#' @rdname TROUT
+TROUT.mts <- function(X, ...){
+  .NotYetImplemented()
+}
+
+#' Compute \code{TROUT} (Time Series Convex Clustering) Solution Path
 #'
-#' \code{CARP} returns a fast approximation to the Convex Clustering
+#' \code{TROUT} returns a fast approximation to the Time Series Convex Clustering
 #' solution path along with visualizations such as dendrograms and
-#' cluster paths. \code{CARP} solves the Convex Clustering problem via an efficient
+#' cluster paths. \code{TROUT} solves the Time Series Convex Clustering problem via an efficient
 #' Algorithmic Regularization scheme.
 #'
-#' @param X The data matrix (\eqn{X \in R^{n \times p}}{X}): rows correspond to
+#' @param X The data matrix (\eqn{X \in C^{n \times p}}{X}): rows correspond to
 #'          the observations (to be clustered) and columns to the variables (which
-#'          will not be clustered). If \code{X} has missing values - \code{NA} or
-#'          \code{NaN} values - they will be automatically imputed.
+#'          will not be clustered). Currently missing data is not supported.
 #' @param labels A character vector of length \eqn{n}: observations (row) labels
 #' @param X.center A logical: Should \code{X} be centered columnwise?
 #' @param X.scale A logical: Should \code{X} be scaled columnwise?
@@ -37,20 +47,13 @@
 #'                      returns an b-by-n matrix of fusion weights.
 #'                \item A matrix of size n-by-n containing fusion weights
 #'                }
-#' @param impute_func A function used to impute missing data in \code{X}. By default,
-#'                    the \code{\link[missForest]{missForest}} function from the
-#'                    package of the same name is used. This provides a flexible
-#'                    potentially non-linear imputation function. This function
-#'                    has to return a data matrix with no \code{NA} values.
-#'                    Note that, consistent with base \code{R}, both \code{NaN}
-#'                    and \code{NA} are treaded as "missing values" for imputation.
 #' @param status Should a status message be printed to the console?
-#' @return An object of class \code{CARP} containing the following elements (among others):
+#' @return An object of class \code{TROUT} containing the following elements (among others):
 #'         \itemize{
 #'         \item \code{X}: the original data matrix
 #'         \item \code{n}: the number of observations (rows of \code{X})
 #'         \item \code{p}: the number of variables (columns of \code{X})
-#'         \item \code{alg.type}: the \code{CARP} variant used
+#'         \item \code{alg.type}: the \code{TROUT} variant used
 #'         \item \code{X.center}: a logical indicating whether \code{X} was centered
 #'                                column-wise before clustering
 #'         \item \code{X.scale}: a logical indicating whether \code{X} was scaled
@@ -62,17 +65,13 @@
 #' @importFrom dplyr %>% mutate group_by ungroup as_tibble n_distinct
 #' @importFrom rlang %||%
 #' @importFrom stats var
-#' @importFrom missForest missForest
+#' @rdname TROUT
 #' @export
-#' @examples
-#' carp_fit <- CARP(presidential_speech[1:10,1:4])
-#' print(carp_fit)
-#' plot(carp_fit)
-CARP <- function(X,
+TROUT.default <- function(X,
                  ...,
                  weights = sparse_rbf_kernel_weights(k = "auto",
                                                      phi = "auto",
-                                                     dist.method = "euclidean",
+                                                     dist.method = "trout",
                                                      p = 2),
                  labels = rownames(X),
                  X.center = TRUE,
@@ -83,7 +82,6 @@ CARP <- function(X,
                  t = 1.05,
                  npcs = min(4L, NCOL(X), NROW(X)),
                  dendrogram.scale = NULL,
-                 impute_func = function(X) {if(anyNA(X)) missForest(X)$ximp else X},
                  status = (interactive() && (clustRviz_logger_level() %in% c("MESSAGE", "WARNING", "ERROR")))) {
 
   tic <- Sys.time()
@@ -98,9 +96,9 @@ CARP <- function(X,
 
   if (length(dots) != 0L) {
     if (!is.null(names(dots))) {
-      crv_error("Unknown argument ", sQuote(names(dots)[1L]), " passed to ", sQuote("CARP."))
+      crv_error("Unknown argument ", sQuote(names(dots)[1L]), " passed to ", sQuote("TROUT."))
     } else {
-      crv_error("Unknown ", sQuote("..."), " arguments passed to ", sQuote("CARP."))
+      crv_error("Unknown ", sQuote("..."), " arguments passed to ", sQuote("TROUT."))
     }
   }
 
@@ -110,25 +108,17 @@ CARP <- function(X,
     X <- as.matrix(X)
   }
 
-  if (!is.numeric(X)) {
-    crv_error(sQuote("X"), " must be numeric.")
+  if (!is.complex(X)) {
+    crv_error(sQuote("X"), " must be complex.")
   }
 
   # Missing data mask: M_{ij} = 1 means we see X_{ij};
+  # Currently we don't support missing values in X so this better be all ones
   M <- 1 - is.na(X)
-
-  # Impute missing values in X
-  # By default, we use the "Missing Forest" function from the missForest package
-  # though other imputers can be supplied by the user.
-  X.orig <- X
-
-  if(anyNA(X)) {
-    X <- impute_func(X)
-  }
 
   ## Check that imputation was successful.
   if (anyNA(X)) {
-    crv_error("Imputation failed. Missing values found in ", sQuote("X"), " even after imputation.")
+    crv_error("TROUT() does not support missing values in ", sQuote("X."))
   }
 
   if (!all(is.finite(X))) {
@@ -180,6 +170,7 @@ CARP <- function(X,
     crv_error(sQuote("labels"), " must be of length ", sQuote("NROW(X)."))
   }
 
+  X.orig <- X
   rownames(X.orig) <- rownames(X) <- labels <- make.unique(as.character(labels), sep="_")
 
   n <- NROW(X)
@@ -219,7 +210,7 @@ CARP <- function(X,
     weight_matrix <- weights
     weight_type   <- UserMatrix()
   } else {
-    crv_error(sQuote("CARP"), " does not know how to handle ", sQuote("weights"),
+    crv_error(sQuote("TROUT"), " does not know how to handle ", sQuote("weights"),
               " of class ", class(weights)[1], ".")
   }
 
@@ -242,28 +233,28 @@ CARP <- function(X,
 
   weight_vec <- weight_mat_to_vec(weight_matrix)
 
-  crv_message("Computing Convex Clustering [CARP] Path")
+  crv_message("Computing Time Series Convex Clustering [TROUT] Path")
   tic_inner <- Sys.time()
 
-  carp.sol.path <- CARPcpp(X = X,
-                           M = M,
-                           D = D,
-                           t = t,
-                           epsilon = .clustRvizOptionsEnv[["epsilon"]],
-                           weights = weight_vec[weight_vec != 0],
-                           rho = .clustRvizOptionsEnv[["rho"]],
-                           thresh = .clustRvizOptionsEnv[["stopping_threshold"]],
-                           max_iter = .clustRvizOptionsEnv[["max_iter"]],
-                           max_inner_iter = .clustRvizOptionsEnv[["max_inner_iter"]],
-                           burn_in = .clustRvizOptionsEnv[["burn_in"]],
-                           viz_max_inner_iter = .clustRvizOptionsEnv[["viz_max_inner_iter"]],
-                           viz_initial_step = .clustRvizOptionsEnv[["viz_initial_step"]],
-                           viz_small_step = .clustRvizOptionsEnv[["viz_small_step"]],
-                           keep = .clustRvizOptionsEnv[["keep"]],
-                           l1 = l1,
-                           show_progress = status,
-                           back_track = back_track,
-                           exact = exact)
+  trout.sol.path <- TROUTcpp(X = X,
+                             M = M,
+                             D = D,
+                             t = t,
+                             epsilon = .clustRvizOptionsEnv[["epsilon"]],
+                             weights = weight_vec[weight_vec != 0],
+                             rho = .clustRvizOptionsEnv[["rho"]],
+                             thresh = .clustRvizOptionsEnv[["stopping_threshold"]],
+                             max_iter = .clustRvizOptionsEnv[["max_iter"]],
+                             max_inner_iter = .clustRvizOptionsEnv[["max_inner_iter"]],
+                             burn_in = .clustRvizOptionsEnv[["burn_in"]],
+                             viz_max_inner_iter = .clustRvizOptionsEnv[["viz_max_inner_iter"]],
+                             viz_initial_step = .clustRvizOptionsEnv[["viz_initial_step"]],
+                             viz_small_step = .clustRvizOptionsEnv[["viz_small_step"]],
+                             keep = .clustRvizOptionsEnv[["keep"]],
+                             l1 = l1,
+                             show_progress = status,
+                             back_track = back_track,
+                             exact = exact)
 
   toc_inner <- Sys.time()
 
@@ -272,22 +263,22 @@ CARP <- function(X,
   ##         RcppEigen returns an Eigen::VectorXd as a n-length vector
   ##         Something downstream cares about the difference, so just change
   ##         the type here for now
-  carp.sol.path$gamma_path <- matrix(carp.sol.path$gamma_path, ncol=1)
+  trout.sol.path$gamma_path <- matrix(trout.sol.path$gamma_path, ncol=1)
 
   crv_message("Post-processing")
 
   post_processing_results <- ConvexClusteringPostProcess(X = X,
                                                          edge_matrix      = edge_list,
-                                                         gamma_path       = carp.sol.path$gamma_path,
-                                                         u_path           = carp.sol.path$u_path,
-                                                         v_path           = carp.sol.path$v_path,
-                                                         v_zero_indices   = carp.sol.path$v_zero_inds,
+                                                         gamma_path       = trout.sol.path$gamma_path,
+                                                         u_path           = trout.sol.path$u_path,
+                                                         v_path           = trout.sol.path$v_path,
+                                                         v_zero_indices   = trout.sol.path$v_zero_inds,
                                                          labels           = labels,
                                                          dendrogram_scale = dendrogram.scale,
                                                          npcs             = npcs,
                                                          smooth_U         = TRUE)
 
-  carp.fit <- list(
+  trout.fit <- list(
     X = X.orig,
     M = M,
     D = D,
@@ -312,36 +303,33 @@ CARP <- function(X,
   )
 
   if (.clustRvizOptionsEnv[["keep_debug_info"]]) {
-    carp.fit[["debug"]] <- list(path = carp.sol.path,
+    trout.fit[["debug"]] <- list(path = trout.sol.path,
                                 row  = post_processing_results$debug)
   }
 
-  class(carp.fit) <- "CARP"
+  class(trout.fit) <- "TROUT"
 
-  return(carp.fit)
+  return(trout.fit)
 }
 
-#' Print \code{CARP} Results
+#' Print \code{TROUT} Results
 #'
-#' Prints a brief descripton of a fitted \code{CARP} object.
+#' Prints a brief descripton of a fitted \code{TROUT} object.
 #'
 #' Reports number of observations and variables of dataset, any preprocessing
-#' done by the \code{\link{CARP}} function, regularization weight information,
-#' and the variant of \code{CARP} used.
+#' done by the \code{\link{TROUT}} function, regularization weight information,
+#' and the variant of \code{TROUT} used.
 #'
 #' @details The \code{as.dendrogram} and \code{as.hclust} methods convert the
-#'          \code{CARP} output to an object of class \code{dendrogram} or \code{hclust}
+#'          \code{CBASS} output to an object of class \code{dendrogram} or \code{hclust}
 #'          respectively.
 #'
-#' @param x an object of class \code{CARP} as returned by \code{\link{CARP}}
-#' @param object an object of class \code{CARP} as returned by \code{\link{CARP}}
+#' @param x an object of class \code{TROUT} as returned by \code{\link{TROUT}}
+#' @param object an object of class \code{TROUT} as returned by \code{\link{TROUT}}
 #' @param ... Additional unused arguments
 #' @export
-#' @rdname print_carp
-#' @examples
-#' carp_fit <- CARP(presidential_speech)
-#' print(carp_fit)
-print.CARP <- function(x, ...) {
+#' @rdname print_trout
+print.TROUT <- function(x, ...) {
   if(x$exact){
     if(x$back_track){
       alg_string = "ADMM-VIZ [Exact Solver + Back-Tracking Fusion Search]"
@@ -350,9 +338,9 @@ print.CARP <- function(x, ...) {
     }
   } else {
     if(x$back_track){
-      alg_string = "CARP-VIZ [Back-Tracking Fusion Search]"
+      alg_string = "TROUT-VIZ [Back-Tracking Fusion Search]"
     } else {
-      alg_string = paste0("CARP (t = ", round(x$t, 3), ")")
+      alg_string = paste0("TROUT (t = ", round(x$t, 3), ")")
     }
   }
 
@@ -360,8 +348,8 @@ print.CARP <- function(x, ...) {
     alg_string <- paste(alg_string, "[L1]")
   }
 
-  cat("CARP Fit Summary\n")
-  cat("====================\n\n")
+  cat("Time Series Convex Clustering Fit Summary\n")
+  cat("=========================================\n\n")
   cat("Algorithm:", alg_string, "\n")
   cat("Fit Time:", sprintf("%2.3f %s", x$fit_time, attr(x$fit_time, "units")), "\n")
   cat("Total Time:", sprintf("%2.3f %s", x$time, attr(x$time, "units")), "\n\n")
@@ -381,14 +369,14 @@ print.CARP <- function(x, ...) {
 
 #' @export
 #' @importFrom stats as.dendrogram
-#' @rdname print_carp
-as.dendrogram.CARP <- function(object, ...){
+#' @rdname print_trout
+as.dendrogram.TROUT <- function(object, ...){
   as.dendrogram(object$dendrogram)
 }
 
 #' @export
 #' @importFrom stats as.hclust
-#' @rdname print_carp
-as.hclust.CARP <- function(x, ...){
+#' @rdname print_trout
+as.hclust.TROUT <- function(x, ...){
   x$dendrogram
 }
